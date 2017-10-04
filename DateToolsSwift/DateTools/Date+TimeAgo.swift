@@ -59,98 +59,54 @@ public extension Date {
     public var shortTimeAgoSinceNow: String {
         return self.shortTimeAgo(since:Date())
     }
+
+	private static func simpleDateFormatter() -> DateFormatter {
+        let fmt = DateFormatter.dateFormat(fromTemplate: "M/d/yyyy", options: 0, locale: NSLocale.current)
+        let formatterObj = DateFormatter()
+        formatterObj.dateFormat = fmt
+        formatterObj.timeZone = TimeZone.current
+        formatterObj.locale = NSLocale.current
+        return formatterObj
+    }
+
+    private static func dayFormatter() -> DateFormatter {
+        let fmt = DateFormatter.dateFormat(fromTemplate: "EEEE", options: 0, locale: NSLocale.current)
+        let formatterObj = DateFormatter()
+        formatterObj.dateFormat = fmt
+        formatterObj.timeZone = TimeZone.current
+        formatterObj.locale = NSLocale.current
+        return formatterObj
+    }
     
     public func timeAgo(since date:Date, numericDates: Bool = false, numericTimes: Bool = false) -> String {
-        let calendar = NSCalendar.current
+		let calendar = NSCalendar.current
         let unitFlags = Set<Calendar.Component>([.second,.minute,.hour,.day,.weekOfYear,.month,.year])
-        let earliest = self.earlierDate(date)
-        let latest = (earliest == self) ? date : self //Should be triple equals, but not extended to Date at this time
-        
-        
-        let components = calendar.dateComponents(unitFlags, from: earliest, to: latest)
+
+        let components = calendar.dateComponents(unitFlags, from: date, to: self)
         let yesterday = date.subtract(1.days)
         let isYesterday = yesterday.day == self.day
-        
+        let isToday = date.day == self.day
+        let isTomorrow = date.add(1.days).day == self.day
+
         //Not Yet Implemented/Optional
         //The following strings are present in the translation files but lack logic as of 2014.04.05
         //@"Today", @"This week", @"This month", @"This year"
         //and @"This morning", @"This afternoon"
         
-        if (components.year! >= 2) {
-            return self.logicalLocalizedStringFromFormat(format: "%%d %@years ago", value: components.year!)
-        }
-        else if (components.year! >= 1) {
-            
-            if (numericDates) {
-                return DateToolsLocalizedStrings("1 year ago");
-            }
-            
-            return DateToolsLocalizedStrings("Last year");
-        }
-        else if (components.month! >= 2) {
-            return self.logicalLocalizedStringFromFormat(format: "%%d %@months ago", value: components.month!)
-        }
-        else if (components.month! >= 1) {
-            
-            if (numericDates) {
-                return DateToolsLocalizedStrings("1 month ago");
-            }
-            
-            return DateToolsLocalizedStrings("Last month");
-        }
-        else if (components.weekOfYear! >= 2) {
-            return self.logicalLocalizedStringFromFormat(format: "%%d %@weeks ago", value: components.weekOfYear!)
-        }
-        else if (components.weekOfYear! >= 1) {
-            
-            if (numericDates) {
-                return DateToolsLocalizedStrings("1 week ago");
-            }
-            
-            return DateToolsLocalizedStrings("Last week");
-        }
-        else if (components.day! >= 2) {
-            return self.logicalLocalizedStringFromFormat(format: "%%d %@days ago", value: components.day!)
-        }
-        else if (isYesterday) {
-            if (numericDates) {
-                return DateToolsLocalizedStrings("1 day ago");
-            }
-            
+        if components.day! < -6 || components.weekOfYear! < 0 {
+            return Date.simpleDateFormatter().string(from: self)
+        } else if components.day! < -1 {
+            return DateToolsLocalizedStrings("Last \(Date.dayFormatter().string(from: self))");
+        } else if isYesterday {
             return DateToolsLocalizedStrings("Yesterday");
-        }
-        else if (components.hour! >= 2) {
-            return self.logicalLocalizedStringFromFormat(format: "%%d %@hours ago", value: components.hour!)
-        }
-        else if (components.hour! >= 1) {
-            
-            if (numericTimes) {
-                return DateToolsLocalizedStrings("1 hour ago");
-            }
-            
-            return DateToolsLocalizedStrings("An hour ago");
-        }
-        else if (components.minute! >= 2) {
-            return self.logicalLocalizedStringFromFormat(format: "%%d %@minutes ago", value: components.minute!)
-        }
-        else if (components.minute! >= 1) {
-            
-            if (numericTimes) {
-                return DateToolsLocalizedStrings("1 minute ago");
-            }
-            
-            return DateToolsLocalizedStrings("A minute ago");
-        }
-        else if (components.second! >= 3) {
-            return self.logicalLocalizedStringFromFormat(format: "%%d %@seconds ago", value: components.second!)
-        }
-        else {
-            
-            if (numericTimes) {
-                return DateToolsLocalizedStrings("1 second ago");
-            }
-            
-            return DateToolsLocalizedStrings("Just now");
+        } else if isToday {
+            return DateToolsLocalizedStrings("Today")
+        } else if isTomorrow {
+            return "Tomorrow"
+        } else if components.day! < 7 && components.weekOfYear! == 0 {
+            return Date.dayFormatter().string(from: self)
+        } else {
+            return Date.simpleDateFormatter().string(from: self)
         }
     }
     
